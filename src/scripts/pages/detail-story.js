@@ -11,6 +11,7 @@ class DetailStoryPage {
   }
 
   async render() {
+    this.model.token = localStorage.getItem('token') || null;
     const detailContainer = document.createElement('div');
     detailContainer.classList.add('detail-story-container');
 
@@ -164,6 +165,14 @@ class DetailStoryPage {
 
     } catch (error) {
       console.error('Error loading story:', error);
+      // Auto-retry reload sekali jika error 401
+      if (String(error).includes('401') && !sessionStorage.getItem('detail-story-retried')) {
+        sessionStorage.setItem('detail-story-retried', '1');
+        window.location.reload();
+        return detailContainer;
+      } else {
+        sessionStorage.removeItem('detail-story-retried');
+      }
       detailContainer.innerHTML = `
         <div class="error-container">
           <i class="fas fa-exclamation-circle"></i>
