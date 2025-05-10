@@ -5,3 +5,10 @@ Map Service: OpenStreetMap
 API Documentation: https://www.openstreetmap.org/
 
 Story API Documentation: https://story-api.dicoding.dev/v1/docs
+
+Deploy ke GitHub
+git add .
+git commit -m "isi sesuai yang ingin diperbaiki atau di update"
+git push
+
+npm run deploy

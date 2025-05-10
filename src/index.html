@@ -23,7 +23,8 @@
     
     <header class="app-header">
       <h1><i class="fas fa-book-open"></i> Story Documentation</h1>
-      <nav>
+      <button class="hamburger" id="hamburger-menu" aria-label="Toggle navigation"><i class="fas fa-bars"></i></button>
+      <nav id="main-nav">
         <ul>
           <li><a href="#/home"><i class="fas fa-home"></i> Home</a></li>
           <li><a href="#/stories"><i class="fas fa-book"></i> Stories</a></li>
@@ -59,6 +60,20 @@
             });
         });
       }
+    </script>
+    <script>
+      // Hamburger menu toggle
+      const hamburger = document.getElementById('hamburger-menu');
+      const nav = document.getElementById('main-nav');
+      hamburger && hamburger.addEventListener('click', () => {
+        nav.classList.toggle('open');
+      });
+      // Close nav on link click (mobile UX)
+      nav && nav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          nav.classList.remove('open');
+        });
+      });
     </script>
   </body>
 </html>
