@@ -76,9 +76,6 @@ class DetailStoryPage {
                 <button id="save-report-btn" class="btn" style="border:1px solid #ccc; background:#fff; color:#222;" title="Simpan laporan">
                   Simpan laporan <i class="fa-regular fa-bookmark"></i>
                 </button>
-                <button class="btn" style="border:1px solid #ccc; background:#fff; color:#222;" title="Try Notify Me">
-                  Try Notify Me <i class="fa-regular fa-bell"></i>
-                </button>
               </div>
             </div>
             <hr />
