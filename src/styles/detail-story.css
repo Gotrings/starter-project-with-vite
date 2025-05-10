@@ -1,0 +1,245 @@
+.detail-story-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #4A90E2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.error-container i {
+  font-size: 3rem;
+  color: #EF5350;
+  margin-bottom: 1rem;
+}
+
+.error-container h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.error-container p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.detail-story {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.detail-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.detail-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+.detail-date {
+  color: #666;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.detail-author {
+  color: #4A90E2;
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+
+.detail-content {
+  padding: 1.5rem;
+}
+
+.detail-image {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.detail-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.detail-description {
+  margin-bottom: 1.5rem;
+}
+
+.detail-description h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.detail-description p {
+  color: #666;
+  line-height: 1.6;
+}
+
+.detail-location {
+  margin-bottom: 1.5rem;
+}
+
+.detail-location h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.detail-location p {
+  color: #666;
+  margin: 0.25rem 0;
+}
+
+.detail-map {
+  height: 300px;
+  margin-top: 1rem;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+.detail-actions {
+  padding: 1.5rem;
+  border-top: 1px solid #eee;
+  text-align: center;
+}
+
+.back-button {
+  background: #4A90E2;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.3s;
+}
+
+.back-button:hover {
+  background: #357ABD;
+}
+
+@media (max-width: 600px) {
+  .detail-story-container {
+    margin: 1rem auto;
+  }
+
+  .detail-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .detail-map {
+    height: 200px;
+  }
+}
+
+/* --- Aksi Section --- */
+.aksi-section {
+  margin: 2rem 0 2rem 0;
+}
+.aksi-section h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+.aksi-section .btn {
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #222;
+  font-size: 1rem;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+.aksi-section .btn:hover {
+  background: #f3f3f3;
+  color: #4A90E2;
+}
+.aksi-section .btn i {
+  margin-left: 0.5rem;
+}
+
+/* --- Tanggapan Section --- */
+.tanggapan-section {
+  margin-top: 2rem;
+}
+.tanggapan-section h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+.tanggapan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.tanggapan-form textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.tanggapan-form textarea:focus {
+  border-color: #4A90E2;
+  outline: none;
+}
+.tanggapan-form button[type="submit"] {
+  background: #4A90E2;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: background 0.2s;
+  align-self: flex-start;
+}
+.tanggapan-form button[type="submit"]:hover {
+  background: #4A90E2;
+} 
