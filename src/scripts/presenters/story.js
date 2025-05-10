@@ -1,5 +1,7 @@
 import DetailStoryPage from '../pages/detail-story.js';
 import SavedReportsPage from '../pages/saved-reports.js';
+import { getUserSavedReports, getStoryComments } from '../data/api.js';
+import { openDB } from '../utils/index.js';
 
 export class StoryPresenter {
     constructor(model, view) {
@@ -107,6 +109,41 @@ export class StoryPresenter {
                     } catch (error) {
                         console.error('Failed to subscribe to notifications:', error);
                     }
+
+                    // --- Sinkronisasi Saved Reports & Komentar ---
+                    try {
+                        const db = await openDB();
+                        // Sinkronisasi Saved Reports
+                        const apiReports = await getUserSavedReports();
+                        const tx1 = db.transaction('savedReports', 'readwrite');
+                        const store1 = tx1.objectStore('savedReports');
+                        await store1.clear();
+                        for (const r of apiReports) {
+                            await store1.put(r);
+                        }
+                        await tx1.complete;
+                        // Sinkronisasi Komentar (per laporan)
+                        for (const r of apiReports) {
+                            const apiComments = await getStoryComments(r.id);
+                            const tx2 = db.transaction('comments', 'readwrite');
+                            const store2 = tx2.objectStore('comments');
+                            // Hapus komentar lama untuk story ini
+                            const index = store2.index('storyId');
+                            const req = index.getAllKeys(r.id);
+                            req.onsuccess = async () => {
+                                for (const key of req.result) {
+                                    await store2.delete(key);
+                                }
+                                for (const c of apiComments) {
+                                    await store2.put({ ...c, storyId: r.id });
+                                }
+                            };
+                        }
+                    } catch (err) {
+                        console.error('Gagal sinkronisasi data user:', err);
+                    }
+                    // --- END Sinkronisasi ---
+
                     this.view.showSuccess('Login successful!');
                     setTimeout(() => {
                         window.location.hash = '#/stories';

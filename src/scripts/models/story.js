@@ -156,14 +156,17 @@ export class StoryModel {
 
     async getStoryById(storyId) {
         try {
-            const headers = {};
+            let headers = {};
             if (this.token) {
                 headers['Authorization'] = `Bearer ${this.token}`;
             }
 
-            const response = await fetch(`${this.baseUrl}/stories/${storyId}`, {
-                headers
-            });
+            let response = await fetch(`${this.baseUrl}/stories/${storyId}`, { headers });
+
+            // Jika gagal 401 dan ada token, coba ulangi tanpa token (public)
+            if (response.status === 401 && this.token) {
+                response = await fetch(`${this.baseUrl}/stories/${storyId}`);
+            }
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
