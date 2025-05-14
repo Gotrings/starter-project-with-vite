@@ -59,14 +59,34 @@ export class StoryView {
 
     async registerServiceWorker() {
         try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
+            const isDev = import.meta.env.MODE === 'development';
+            const swPath = isDev ? '/starter-project-with-vite/sw.js' : '/starter-project-with-vite/sw.js';
+            const scope = '/starter-project-with-vite/';
+
+            console.log('Registering Service Worker:', { isDev, swPath, scope });
+
+            const registration = await navigator.serviceWorker.register(swPath, { scope });
+            console.log('Service Worker registered successfully:', registration);
+
+            if (registration.active) {
+                console.log('Service Worker is already active');
+            } else if (registration.installing) {
+                console.log('Service Worker is installing...');
+            } else if (registration.waiting) {
+                console.log('Service Worker is waiting...');
+            }
+
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: 'BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk'
             });
+
+            console.log('Push notification subscription successful:', subscription);
             return subscription;
         } catch (error) {
             console.error('Error registering service worker:', error);
+            this.showError('Failed to register Service Worker: ' + error.message);
+            throw error;
         }
     }
 
@@ -158,16 +178,48 @@ export class StoryView {
             </section>
         `;
 
-        // Add click handlers for detail buttons
+        this.initializeMap(stories);
+    }
+    
+    bindStoryDetailButtons(handler) {
         const detailButtons = this.appElement.querySelectorAll('.btn-detail');
         detailButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const storyId = button.getAttribute('data-id');
-                window.location.hash = `#/detail?id=${storyId}`;
+                handler(storyId);
             });
         });
-
-        this.initializeMap(stories);
+    }
+    
+    bindAddStoryButton(handler) {
+        const addStoryBtn = document.getElementById('add-story-btn');
+        if (addStoryBtn) {
+            addStoryBtn.addEventListener('click', handler);
+        }
+    }
+    
+    bindAddStoryGuestButton(handler) {
+        const addStoryGuestBtn = document.getElementById('add-story-guest-btn');
+        if (addStoryGuestBtn) {
+            addStoryGuestBtn.addEventListener('click', handler);
+        }
+    }
+    
+    bindStoryForm(handler) {
+        const form = document.getElementById('story-form');
+        if (!form) return;
+        
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const storyData = {
+                description: formData.get('description'),
+                photo: formData.get('photo'),
+                lat: formData.get('lat'),
+                lon: formData.get('lon')
+            };
+            handler(storyData);
+        });
     }
 
     createStoryCard(story) {
@@ -412,41 +464,86 @@ export class StoryView {
         });
     }
 
+    // Metode ini tidak lagi diperlukan karena sudah digantikan oleh bindStoryForm
+    // yang mengikuti prinsip MVP dengan lebih baik
     setupStoryForm() {
-        const storyForm = document.getElementById('story-form');
-        storyForm.addEventListener('submit', async (e) => {
+        // Metode ini dipertahankan untuk kompatibilitas dengan kode lama
+        // tetapi tidak melakukan apa-apa karena fungsionalitasnya
+        // sudah dipindahkan ke bindStoryForm
+        console.warn('setupStoryForm() is deprecated, use bindStoryForm() instead');
+    }
+
+    renderDetail(content) {
+        this.appElement.innerHTML = '';
+        this.appElement.appendChild(content);
+    }
+
+    renderNotFound(data) {
+        this.appElement.innerHTML = `
+            <section class="not-found">
+                <h2>${data.title}</h2>
+                <p>${data.message}</p>
+                <button class="btn" id="not-found-back-btn">${data.buttonText}</button>
+            </section>
+        `;
+        
+        const backButton = document.getElementById('not-found-back-btn');
+        if (backButton) {
+            backButton.addEventListener('click', () => {
+                window.location.hash = data.buttonAction;
+            });
+        }
+    }
+    
+    bindLoginButton(handler) {
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', handler);
+        }
+    }
+    
+    bindRegisterButton(handler) {
+        const registerBtn = document.getElementById('register-btn');
+        if (registerBtn) {
+            registerBtn.addEventListener('click', handler);
+        }
+    }
+    
+    bindLogoutButton(handler) {
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', handler);
+        }
+    }
+    
+    bindLoginForm(handler) {
+        const form = document.getElementById('login-form');
+        if (!form) return;
+        
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            const formData = new FormData(storyForm);
-            const description = formData.get('description');
-            const photo = formData.get('photo');
-            const lat = formData.get('lat');
-            const lon = formData.get('lon');
-
-            try {
-                // Show loading state
-                const submitBtn = storyForm.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Submitting...';
-
-                // Here you would typically send the data to your backend
-                // For now, we'll simulate a successful submission
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // Show success message
-                this.showSuccess('Story submitted successfully!');
-
-                // Redirect to stories page
-                window.location.hash = '#/stories';
-            } catch (error) {
-                this.showError('Failed to submit story');
-                console.error('Error submitting story:', error);
-            } finally {
-                // Reset button state
-                const submitBtn = storyForm.querySelector('button[type="submit"]');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Story';
-            }
+            const formData = new FormData(form);
+            const credentials = {
+                email: formData.get('email'),
+                password: formData.get('password')
+            };
+            handler(credentials);
         });
     }
-} 
+    
+    bindRegisterForm(handler) {
+        const form = document.getElementById('register-form');
+        if (!form) return;
+        
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const userData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                password: formData.get('password')
+            };
+            handler(userData);
+        });
+    }
+}

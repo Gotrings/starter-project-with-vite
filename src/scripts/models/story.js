@@ -13,6 +13,7 @@ export class StoryModel {
                 },
                 body: JSON.stringify(userData),
             });
+            if (!response.ok) throw new Error(`Register failed: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('Error registering:', error);
@@ -22,21 +23,46 @@ export class StoryModel {
 
     async login(credentials) {
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
             const response = await fetch(`${this.baseUrl}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(credentials),
+                signal: controller.signal
             });
-            const data = await response.json();
-            if (!data.error) {
-                this.token = data.loginResult.token;
-                localStorage.setItem('token', this.token);
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Login failed: ${response.status}`);
             }
+
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            if (!data.loginResult || !data.loginResult.token) {
+                throw new Error('Invalid response format: missing token');
+            }
+
+            this.token = data.loginResult.token;
+            localStorage.setItem('token', this.token);
             return data;
         } catch (error) {
             console.error('Error logging in:', error);
+            if (error.name === 'AbortError') {
+                throw new Error('Login request timed out. Please check your internet connection.');
+            }
+            if (error.message.includes('Failed to fetch')) {
+                throw new Error('Cannot connect to the server. Please check your internet connection.');
+            }
             throw error;
         }
     }
@@ -47,6 +73,7 @@ export class StoryModel {
     }
 
     async getStories(page = 1, size = 10, location = 0) {
+        this.token = localStorage.getItem('token') || null;
         try {
             const headers = {};
             if (this.token) {
@@ -75,6 +102,7 @@ export class StoryModel {
     }
 
     async addStory(storyData) {
+        this.token = localStorage.getItem('token') || null;
         try {
             const formData = new FormData();
             formData.append('description', storyData.description);
@@ -92,7 +120,7 @@ export class StoryModel {
                 headers,
                 body: formData,
             });
-
+            if (!response.ok) throw new Error(`Add story failed: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('Error adding story:', error);
@@ -112,7 +140,7 @@ export class StoryModel {
                 method: 'POST',
                 body: formData,
             });
-
+            if (!response.ok) throw new Error(`Add story as guest failed: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('Error adding story as guest:', error);
@@ -121,6 +149,7 @@ export class StoryModel {
     }
 
     async subscribeToNotifications(subscription) {
+        this.token = localStorage.getItem('token') || null;
         try {
             const response = await fetch(`${this.baseUrl}/notifications/subscribe`, {
                 method: 'POST',
@@ -130,6 +159,7 @@ export class StoryModel {
                 },
                 body: JSON.stringify(subscription),
             });
+            if (!response.ok) throw new Error(`Subscribe to notifications failed: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('Error subscribing to notifications:', error);
@@ -138,6 +168,7 @@ export class StoryModel {
     }
 
     async unsubscribeFromNotifications(endpoint) {
+        this.token = localStorage.getItem('token') || null;
         try {
             const response = await fetch(`${this.baseUrl}/notifications/subscribe`, {
                 method: 'DELETE',
@@ -147,6 +178,7 @@ export class StoryModel {
                 },
                 body: JSON.stringify({ endpoint }),
             });
+            if (!response.ok) throw new Error(`Unsubscribe from notifications failed: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('Error unsubscribing from notifications:', error);
@@ -155,6 +187,7 @@ export class StoryModel {
     }
 
     async getStoryById(storyId) {
+        this.token = localStorage.getItem('token') || null;
         try {
             let headers = {};
             if (this.token) {

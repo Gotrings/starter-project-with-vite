@@ -12,3 +12,5 @@ git commit -m "isi sesuai yang ingin diperbaiki atau di update"
 git push
 
 npm run deploy
+
+link Online : https://gotrings.github.io/starter-project-with-vite/

@@ -9,8 +9,8 @@
     
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/starter-project-with-vite/icons/icon-192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Story">
     
@@ -30,6 +30,7 @@
           <li><a href="#/stories"><i class="fas fa-book"></i> Stories</a></li>
           <li><a href="#/add-story"><i class="fas fa-plus-circle"></i> Add Story</a></li>
           <li><a href="#/saved-reports"><i class="fas fa-bookmark"></i> Lihat Laporan Tersimpan</a></li>
+          <li><button id="push-subscribe-btn" class="btn" style="margin-left: 1rem; border:1px solid #4A90E2; background:#fff; color:#4A90E2; vertical-align: middle;">Subscribe Notifikasi <i class="fa-solid fa-bell"></i></button></li>
         </ul>
       </nav>
     </header>
@@ -51,7 +52,8 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
+          const swPath = '/starter-project-with-vite/sw.js';
+          navigator.serviceWorker.register(swPath)
             .then(registration => {
               console.log('ServiceWorker registration successful');
             })

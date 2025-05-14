@@ -2,6 +2,8 @@ import { StoryModel } from '../models/story.js';
 // import { StoryView } from '../views/story.js';
 // import { StoryPresenter } from '../presenters/story.js';
 import { saveReport, addComment, getCommentsByStoryId, deleteComment } from '../utils/index.js';
+import pushNotificationService from '../services/pushNotification.js';
+import { showLocalNotification } from '../index.js';
 
 class DetailStoryPage {
   constructor() {
@@ -116,9 +118,40 @@ class DetailStoryPage {
       // IndexedDB: Simpan laporan
       const saveBtn = detailContainer.querySelector('#save-report-btn');
       saveBtn.addEventListener('click', async () => {
-        await saveReport({ id: story.id, name, description, photoUrl, lat, lon, createdAt: story.createdAt });
-        saveBtn.innerHTML = 'Tersimpan <i class="fa-solid fa-check"></i>';
-        saveBtn.disabled = true;
+        try {
+          // Simpan ke IndexedDB
+          const reportData = { 
+            id: story.id, 
+            name, 
+            description, 
+            photoUrl, 
+            lat, 
+            lon, 
+            createdAt: story.createdAt 
+          };
+          await saveReport(reportData);
+
+          // Update UI
+          saveBtn.innerHTML = 'Tersimpan <i class="fa-solid fa-check"></i>';
+          saveBtn.disabled = true;
+          saveBtn.style.background = '#4CAF50';
+          saveBtn.style.color = '#fff';
+          saveBtn.style.border = 'none';
+          
+          if (this.view && this.view.showSuccess) {
+            this.view.showSuccess('Laporan berhasil disimpan!');
+          } else {
+            alert('Laporan berhasil disimpan!');
+          }
+          showLocalNotification('Notifikasi Laporan!', 'Laporan kamu berhasil disimpan!');
+        } catch (error) {
+          console.error('Error saving report:', error);
+          if (this.view && this.view.showError) {
+            this.view.showError('Gagal menyimpan laporan: ' + error.message);
+          } else {
+            alert('Gagal menyimpan laporan: ' + error.message);
+          }
+        }
       });
 
       // IndexedDB: Komentar
@@ -158,10 +191,90 @@ class DetailStoryPage {
         await addComment(story.id, user, message);
         textarea.value = '';
         renderComments();
+        showLocalNotification('Notifikasi Komentar!', `Ada komentar yang perlu kamu cek segera! Komentarnya: ${message}`);
       });
 
     } catch (error) {
       console.error('Error loading story:', error);
+
+      // Fallback: coba ambil dari IndexedDB jika error 404
+      if (String(error).includes('404')) {
+        try {
+          const db = await openDB();
+          const tx = db.transaction('savedReports', 'readonly');
+          const store = tx.objectStore('savedReports');
+          const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+          const storyId = urlParams.get('id');
+          const localStory = await store.get(storyId);
+
+          if (localStory) {
+            // Render detail dari data lokal
+            const name = localStory.name || '-';
+            const createdAt = localStory.createdAt ? new Date(localStory.createdAt) : null;
+            const formattedDate = createdAt ? createdAt.toLocaleDateString('id-ID', {
+              year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            }) : '-';
+            const lat = localStory.lat !== undefined ? localStory.lat : '-';
+            const lon = localStory.lon !== undefined ? localStory.lon : '-';
+            const photoUrl = localStory.photoUrl || '';
+            const description = localStory.description || '-';
+            const ownerName = '- (offline)';
+
+            detailContainer.innerHTML = `
+              <div class="detail-story">
+                <div class="detail-header">
+                  <h2>${name}</h2>
+                  <p class="detail-date">${formattedDate}</p>
+                  <p class="detail-author">Dibuat oleh: ${ownerName}</p>
+                </div>
+                <div class="detail-content">
+                  <div class="detail-image">
+                    ${photoUrl ? `<img src="${photoUrl}" alt="${name}" loading="lazy">` : '<span>Tidak ada foto</span>'}
+                  </div>
+                  <div class="detail-description">
+                    <h3>Deskripsi</h3>
+                    <p>${description}</p>
+                  </div>
+                  <div class="detail-location">
+                    <h3>Lokasi</h3>
+                    <p>Latitude: ${lat}</p>
+                    <p>Longitude: ${lon}</p>
+                    <div id="map" class="detail-map"></div>
+                  </div>
+                  <hr />
+                  <div class="aksi-section">
+                    <h3>Aksi</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                      <button class="back-button" onclick="window.location.hash = '#/stories'">
+                        <i class="fas fa-arrow-left"></i> Kembali ke Stories
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+            // Inisialisasi peta jika data lat/lon valid
+            if (lat !== '-' && lon !== '-') {
+              setTimeout(() => {
+                const map = L.map('map').setView([lat, lon], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                L.marker([lat, lon])
+                  .addTo(map)
+                  .bindPopup(name)
+                  .openPopup();
+              }, 0);
+            } else {
+              document.getElementById('map').innerHTML = '<p>Lokasi tidak tersedia</p>';
+            }
+            return detailContainer;
+          }
+        } catch (localErr) {
+          console.error('Error loading local story:', localErr);
+        }
+      }
+
       // Auto-retry reload sekali jika error 401
       if (String(error).includes('401') && !sessionStorage.getItem('detail-story-retried')) {
         sessionStorage.setItem('detail-story-retried', '1');
@@ -186,4 +299,4 @@ class DetailStoryPage {
   }
 }
 
-export default DetailStoryPage; 
+export default DetailStoryPage;

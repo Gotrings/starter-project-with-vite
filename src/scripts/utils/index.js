@@ -10,7 +10,6 @@ export function showFormattedDate(date, locale = 'en-US', options = {}) {
 export function sleep(time = 1000) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
-
 // IndexedDB Utility
 export function openDB() {
   return new Promise((resolve, reject) => {
@@ -90,3 +89,4 @@ export async function deleteComment(commentId) {
     tx.onerror = () => reject(tx.error);
   });
 }
+

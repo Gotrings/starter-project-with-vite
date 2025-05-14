@@ -2,6 +2,7 @@ import DetailStoryPage from '../pages/detail-story.js';
 import SavedReportsPage from '../pages/saved-reports.js';
 import { getUserSavedReports, getStoryComments } from '../data/api.js';
 import { openDB } from '../utils/index.js';
+import { showLocalNotification } from '../index.js';
 
 export class StoryPresenter {
     constructor(model, view) {
@@ -14,31 +15,29 @@ export class StoryPresenter {
         try {
             if (hash.startsWith('#/detail')) {
                 const detailContent = await this.detailPage.render();
-                this.view.appElement.innerHTML = '';
-                this.view.appElement.appendChild(detailContent);
+                this.view.renderDetail(detailContent);
                 return;
             }
 
             if (hash.startsWith('#/saved-reports')) {
                 const page = new SavedReportsPage();
                 const content = await page.render();
-                this.view.appElement.innerHTML = '';
-                this.view.appElement.appendChild(content);
+                this.view.renderDetail(content);
                 return;
             }
 
             switch (hash) {
                 case '#/home':
                     this.view.renderHome();
-                    this.setupAuthButtons();
+                    this.setupHomeEventHandlers();
                     break;
                 case '#/login':
                     this.view.renderLogin();
-                    this.setupLoginForm();
+                    this.setupLoginEventHandlers();
                     break;
                 case '#/register':
                     this.view.renderRegister();
-                    this.setupRegisterForm();
+                    this.setupRegisterEventHandlers();
                     break;
                 case '#/stories':
                     await this.handleStories();
@@ -50,7 +49,13 @@ export class StoryPresenter {
                     this.handleAddStory(true);
                     break;
                 default:
-                    window.location.hash = '#/home';
+                    // Tampilkan halaman Not Found jika route tidak dikenali
+                    this.view.renderNotFound({
+                        title: '404 - Halaman Tidak Ditemukan',
+                        message: 'Halaman yang Anda cari tidak tersedia.',
+                        buttonText: 'Kembali ke Home',
+                        buttonAction: '#/home'
+                    });
             }
         } catch (error) {
             console.error('Error in handleRoute:', error);
@@ -60,43 +65,23 @@ export class StoryPresenter {
         }
     }
 
-    setupAuthButtons() {
-        const loginBtn = document.getElementById('login-btn');
-        const registerBtn = document.getElementById('register-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
-                window.location.hash = '#/login';
-            });
-        }
-
-        if (registerBtn) {
-            registerBtn.addEventListener('click', () => {
-                window.location.hash = '#/register';
-            });
-        }
-
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                this.model.logout();
-                window.location.hash = '#/home';
-            });
-        }
+    setupHomeEventHandlers() {
+        this.view.bindLoginButton(() => {
+            window.location.hash = '#/login';
+        });
+        
+        this.view.bindRegisterButton(() => {
+            window.location.hash = '#/register';
+        });
+        
+        this.view.bindLogoutButton(() => {
+            this.model.logout();
+            window.location.hash = '#/home';
+        });
     }
 
-    setupLoginForm() {
-        const form = document.getElementById('login-form');
-        if (!form) return;
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const credentials = {
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
-
+    setupLoginEventHandlers() {
+        this.view.bindLoginForm(async (credentials) => {
             try {
                 const result = await this.model.login(credentials);
                 if (!result.error) {
@@ -110,38 +95,9 @@ export class StoryPresenter {
                         console.error('Failed to subscribe to notifications:', error);
                     }
 
-                    // --- Sinkronisasi Saved Reports & Komentar ---
-                    try {
-                        const db = await openDB();
-                        // Sinkronisasi Saved Reports
-                        const apiReports = await getUserSavedReports();
-                        const tx1 = db.transaction('savedReports', 'readwrite');
-                        const store1 = tx1.objectStore('savedReports');
-                        await store1.clear();
-                        for (const r of apiReports) {
-                            await store1.put(r);
-                        }
-                        await tx1.complete;
-                        // Sinkronisasi Komentar (per laporan)
-                        for (const r of apiReports) {
-                            const apiComments = await getStoryComments(r.id);
-                            const tx2 = db.transaction('comments', 'readwrite');
-                            const store2 = tx2.objectStore('comments');
-                            // Hapus komentar lama untuk story ini
-                            const index = store2.index('storyId');
-                            const req = index.getAllKeys(r.id);
-                            req.onsuccess = async () => {
-                                for (const key of req.result) {
-                                    await store2.delete(key);
-                                }
-                                for (const c of apiComments) {
-                                    await store2.put({ ...c, storyId: r.id });
-                                }
-                            };
-                        }
-                    } catch (err) {
-                        console.error('Gagal sinkronisasi data user:', err);
-                    }
+                    // --- Sinkronisasi Komentar (per laporan) ---
+                    // Nonaktifkan sinkronisasi saved reports karena endpoint tidak tersedia
+                    // Jika ingin sinkronisasi komentar, pastikan endpoint tersedia
                     // --- END Sinkronisasi ---
 
                     this.view.showSuccess('Login successful!');
@@ -157,19 +113,8 @@ export class StoryPresenter {
         });
     }
 
-    setupRegisterForm() {
-        const form = document.getElementById('register-form');
-        if (!form) return;
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const userData = {
-                name: formData.get('name'),
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
-
+    setupRegisterEventHandlers() {
+        this.view.bindRegisterForm(async (userData) => {
             try {
                 const result = await this.model.register(userData);
                 if (!result.error) {
@@ -188,7 +133,7 @@ export class StoryPresenter {
         try {
             const stories = await this.model.getStories();
             this.view.renderStories(stories);
-            this.setupStoryButtons();
+            this.setupStoriesEventHandlers();
         } catch (error) {
             if (error.message.includes('401')) {
                 // Token expired or invalid
@@ -203,42 +148,27 @@ export class StoryPresenter {
         }
     }
 
-    setupStoryButtons() {
-        const addStoryBtn = document.getElementById('add-story-btn');
-        const addStoryGuestBtn = document.getElementById('add-story-guest-btn');
-
-        if (addStoryBtn) {
-            addStoryBtn.addEventListener('click', () => {
-                window.location.hash = '#/add-story';
-            });
-        }
-
-        if (addStoryGuestBtn) {
-            addStoryGuestBtn.addEventListener('click', () => {
-                window.location.hash = '#/add-story-guest';
-            });
-        }
+    setupStoriesEventHandlers() {
+        this.view.bindAddStoryButton(() => {
+            window.location.hash = '#/add-story';
+        });
+        
+        this.view.bindAddStoryGuestButton(() => {
+            window.location.hash = '#/add-story-guest';
+        });
+        
+        this.view.bindStoryDetailButtons((storyId) => {
+            window.location.hash = `#/detail?id=${storyId}`;
+        });
     }
 
     handleAddStory(isGuest = false) {
         this.view.renderAddStory(isGuest);
-        this.setupStoryForm(isGuest);
+        this.setupAddStoryEventHandlers(isGuest);
     }
 
-    setupStoryForm(isGuest) {
-        const form = document.getElementById('story-form');
-        if (!form) return;
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const storyData = {
-                description: formData.get('description'),
-                photo: formData.get('photo'),
-                lat: formData.get('lat'),
-                lon: formData.get('lon')
-            };
-
+    setupAddStoryEventHandlers(isGuest) {
+        this.view.bindStoryForm(async (storyData) => {
             try {
                 const result = isGuest
                     ? await this.model.addStoryAsGuest(storyData)
@@ -246,6 +176,9 @@ export class StoryPresenter {
 
                 if (!result.error) {
                     this.view.showSuccess('Story added successfully!');
+                    showLocalNotification('Story berhasil dibuat', {
+                      body: `Anda telah membuat story baru dengan deskripsi: ${storyData.description}`
+                    });
                 } else {
                     this.view.showError(result.message);
                 }
@@ -254,4 +187,4 @@ export class StoryPresenter {
             }
         });
     }
-} 
+}

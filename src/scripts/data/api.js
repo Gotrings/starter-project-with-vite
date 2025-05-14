@@ -12,6 +12,7 @@ function getToken() {
 
 export async function getData() {
   const fetchResponse = await fetch(ENDPOINTS.ENDPOINT);
+  if (!fetchResponse.ok) throw new Error('Failed to fetch data: ' + fetchResponse.status);
   return await fetchResponse.json();
 }
 
@@ -20,7 +21,7 @@ export async function getUserSavedReports() {
   const res = await fetch(ENDPOINTS.SAVED_REPORTS, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch saved reports');
+  if (!res.ok) throw new Error('Failed to fetch saved reports: ' + res.status);
   return res.json();
 }
 
@@ -34,7 +35,7 @@ export async function addUserSavedReport(story) {
     },
     body: JSON.stringify(story),
   });
-  if (!res.ok) throw new Error('Failed to save report');
+  if (!res.ok) throw new Error('Failed to save report: ' + res.status);
   return res.json();
 }
 
@@ -44,7 +45,7 @@ export async function deleteUserSavedReport(id) {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error('Failed to delete report');
+  if (!res.ok) throw new Error('Failed to delete report: ' + res.status);
   return res.json();
 }
 
@@ -53,7 +54,7 @@ export async function getStoryComments(storyId) {
   const res = await fetch(ENDPOINTS.STORY_COMMENTS(storyId), {
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error('Failed to fetch comments');
+  if (!res.ok) throw new Error('Failed to fetch comments: ' + res.status);
   return res.json();
 }
 
@@ -67,7 +68,7 @@ export async function addStoryComment(storyId, user, message) {
     },
     body: JSON.stringify({ user, message }),
   });
-  if (!res.ok) throw new Error('Failed to add comment');
+  if (!res.ok) throw new Error('Failed to add comment: ' + res.status);
   return res.json();
 }
 
@@ -77,6 +78,6 @@ export async function deleteStoryComment(storyId, commentId) {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error('Failed to delete comment');
+  if (!res.ok) throw new Error('Failed to delete comment: ' + res.status);
   return res.json();
 }
