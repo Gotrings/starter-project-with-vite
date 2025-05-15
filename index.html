@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Share your stories with the world">
+    <meta name="theme-color" content="#4A90E2">
+    <title>Story Documentation</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/starter-project-with-vite/manifest.json">
+    <link rel="apple-touch-icon" href="/starter-project-with-vite/icons/icon-192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Story">
+    <meta name="theme-color" content="#4A90E2">
+    <link rel="icon" href="/starter-project-with-vite/icons/icon-192x192.png">
+    <link rel="shortcut icon" href="/starter-project-with-vite/icons/icon-192x192.png">
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script type="module" crossorigin src="/starter-project-with-vite/assets/index-DH5IHtoX.js"></script>
+    <link rel="stylesheet" crossorigin href="/starter-project-with-vite/assets/index-C2ubdYF3.css">
+  <link rel="manifest" href="/starter-project-with-vite/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/starter-project-with-vite/registerSW.js"></script></head>
+  <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
+    
+    <header class="app-header">
+      <h1><i class="fas fa-book-open"></i> Story Documentation</h1>
+      <button class="hamburger" id="hamburger-menu" aria-label="Toggle navigation"><i class="fas fa-bars"></i></button>
+      <nav id="main-nav">
+        <ul>
+          <li><a href="#/home"><i class="fas fa-home"></i> Home</a></li>
+          <li><a href="#/stories"><i class="fas fa-book"></i> Stories</a></li>
+          <li><a href="#/add-story"><i class="fas fa-plus-circle"></i> Add Story</a></li>
+          <li><a href="#/saved-reports"><i class="fas fa-bookmark"></i> Lihat Laporan Tersimpan</a></li>
+          <li><a href="#/offline-stories"><i class="fas fa-cloud-download-alt"></i> Offline Stories</a></li>
+          <li><button id="push-subscribe-btn" class="btn" style="margin-left: 1rem; border:1px solid #4A90E2; background:#fff; color:#4A90E2; vertical-align: middle;">Subscribe Notifikasi <i class="fa-solid fa-bell"></i></button></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="main-content">
+      <div id="app"></div>
+    </main>
+
+    <footer>
+      <p>&copy; 2024 Story Documentation. All rights reserved.</p>
+    </footer>
+
+    <!-- External Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      // Hamburger menu toggle
+      const hamburger = document.getElementById('hamburger-menu');
+      const nav = document.getElementById('main-nav');
+      hamburger && hamburger.addEventListener('click', () => {
+        nav.classList.toggle('open');
+      });
+      // Close nav on link click (mobile UX)
+      nav && nav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          nav.classList.remove('open');
+        });
+      });
+    </script>
+  </body>
+</html>
