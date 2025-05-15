@@ -6,7 +6,7 @@
   "description": "Aplikasi untuk berbagi cerita dan pengalaman menarik",
   "repository": {
     "type": "git",
-    "url": "https://github.com/username/story-app.git"
+    "url": "https://github.com/Gotrings/starter-project-with-vite.git"
   },
   "keywords": [
     "story",
@@ -86,8 +86,6 @@
     "not op_mini all"
   ]
 }
-{
-  "scripts": {
-    "deploy": "gh-pages -d dist"
-  }
-}
+
+  
+
