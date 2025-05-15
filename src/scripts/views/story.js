@@ -59,34 +59,18 @@ export class StoryView {
 
     async registerServiceWorker() {
         try {
-            const isDev = import.meta.env.MODE === 'development';
-            const swPath = isDev ? '/starter-project-with-vite/sw.js' : '/starter-project-with-vite/sw.js';
-            const scope = '/starter-project-with-vite/';
-
-            console.log('Registering Service Worker:', { isDev, swPath, scope });
-
-            const registration = await navigator.serviceWorker.register(swPath, { scope });
-            console.log('Service Worker registered successfully:', registration);
-
-            if (registration.active) {
-                console.log('Service Worker is already active');
-            } else if (registration.installing) {
-                console.log('Service Worker is installing...');
-            } else if (registration.waiting) {
-                console.log('Service Worker is waiting...');
+            let swPath = '/sw.js';
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                swPath = '/starter-project-with-vite/sw.js';
             }
-
+            const registration = await navigator.serviceWorker.register(swPath);
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: 'BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk'
             });
-
-            console.log('Push notification subscription successful:', subscription);
             return subscription;
         } catch (error) {
             console.error('Error registering service worker:', error);
-            this.showError('Failed to register Service Worker: ' + error.message);
-            throw error;
         }
     }
 

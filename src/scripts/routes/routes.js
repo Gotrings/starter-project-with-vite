@@ -1,15 +1,16 @@
+import HomePage from '../pages/home/home-page.js';
 import DetailStoryPage from '../pages/detail-story.js';
+import AddStoryPage from '../pages/add-story.js';
+import SavedReportsPage from '../pages/saved-reports.js';
+import OfflineStoriesPage from '../pages/offline-stories.js';
 
 const routes = {
-  '/': 'home',
-  '/home': 'home',
-  '/login': 'login',
-  '/register': 'register',
-  '/stories': 'stories',
-  '/detail': new DetailStoryPage(),
-  '/saved-reports': 'saved-reports',
-  '/add-story': 'add-story',
-  '/add-story-guest': 'add-story-guest'
+  '/': HomePage,
+  '/home': HomePage,
+  '/stories/:id': DetailStoryPage,
+  '/add-story': AddStoryPage,
+  '/saved-reports': SavedReportsPage,
+  '/offline-stories': OfflineStoriesPage,
 };
 
 export default routes;

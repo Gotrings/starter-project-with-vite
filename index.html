@@ -2,29 +2,98 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Aplikasi untuk berbagi cerita" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="description" content="Aplikasi untuk berbagi cerita dan pengalaman menarik" />
+    <meta name="keywords" content="story, cerita, pengalaman, blog, sharing" />
+    <meta name="author" content="Story App" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Story App" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
+    
+    <!-- iOS Splash Screen -->
+    <link rel="apple-touch-startup-image" href="/splash/launch-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-750x1294.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-1242x2148.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    
     <title>Story App</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.jsx" as="script" />
+    <link rel="preload" href="/src/styles/main.css" as="style" />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://story-api.dicoding.dev" />
+    <link rel="dns-prefetch" href="https://story-api.dicoding.dev" />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.js"></script>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    
+    <!-- Main app script -->
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Service Worker Registration -->
     <script>
+      // Check if service workers are supported
       if ('serviceWorker' in navigator) {
+        // Wait for the page to be fully loaded
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+          navigator.serviceWorker.register('/starter-project-with-vite/sw.js', { scope: '/starter-project-with-vite/' })
             .then(registration => {
-              console.log('ServiceWorker registration successful');
+              console.log('[Service Worker] Registration successful with scope: ', registration.scope);
+              
+              // Check if there's a pending update
+              if (registration.waiting) {
+                console.log('[Service Worker] Update available');
+                // You can prompt the user to update here
+              }
+              
+              // Listen for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                console.log('[Service Worker] Update found, installing...');
+                
+                newWorker.addEventListener('statechange', () => {
+                  console.log('[Service Worker] State changed to: ', newWorker.state);
+                });
+              });
             })
-            .catch(err => {
-              console.log('ServiceWorker registration failed: ', err);
+            .catch(error => {
+              console.error('[Service Worker] Registration failed: ', error);
             });
         });
+        
+        // Listen for controller changes (when a new service worker takes control)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('[Service Worker] Controller changed, reloading...');
+          window.location.reload();
+        });
+      } else {
+        console.warn('Service workers are not supported in this browser');
       }
+      
+      // Handle before install prompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar from appearing on mobile
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        deferredPrompt = e;
+        console.log('Before install prompt fired');
+        // You can show a custom install button here
+      });
     </script>
   </body>
-</html> 
+</html>

@@ -24,7 +24,7 @@ export class StoryModel {
     async login(credentials) {
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
             const response = await fetch(`${this.baseUrl}/login`, {
                 method: 'POST',
@@ -73,7 +73,6 @@ export class StoryModel {
     }
 
     async getStories(page = 1, size = 10, location = 0) {
-        this.token = localStorage.getItem('token') || null;
         try {
             const headers = {};
             if (this.token) {
@@ -102,7 +101,6 @@ export class StoryModel {
     }
 
     async addStory(storyData) {
-        this.token = localStorage.getItem('token') || null;
         try {
             const formData = new FormData();
             formData.append('description', storyData.description);
@@ -149,7 +147,6 @@ export class StoryModel {
     }
 
     async subscribeToNotifications(subscription) {
-        this.token = localStorage.getItem('token') || null;
         try {
             const response = await fetch(`${this.baseUrl}/notifications/subscribe`, {
                 method: 'POST',
@@ -168,7 +165,6 @@ export class StoryModel {
     }
 
     async unsubscribeFromNotifications(endpoint) {
-        this.token = localStorage.getItem('token') || null;
         try {
             const response = await fetch(`${this.baseUrl}/notifications/subscribe`, {
                 method: 'DELETE',
@@ -187,7 +183,6 @@ export class StoryModel {
     }
 
     async getStoryById(storyId) {
-        this.token = localStorage.getItem('token') || null;
         try {
             let headers = {};
             if (this.token) {

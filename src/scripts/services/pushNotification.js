@@ -14,23 +14,13 @@ class PushNotificationService {
     }
 
     try {
-      const isDev = import.meta.env.MODE === 'development';
-      const base = isDev ? '' : '/starter-project-with-vite';
-      const swPath = isDev ? '/sw.js' : '/starter-project-with-vite/sw.js';
-      const scope = isDev ? '/' : '/starter-project-with-vite/';
-      
-      // Ensure variables are defined in error logging scope
-      this.isDev = isDev;
-      this.swPath = swPath;
-      this.scope = scope;
-      
-      console.log('Environment:', isDev ? 'Development' : 'Production');
-      console.log('Base URL:', base);
-      console.log('Service Worker Path:', swPath);
-      console.log('Service Worker Scope:', scope);
-      
+      let swPath = '/sw.js';
+      if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        swPath = '/starter-project-with-vite/sw.js';
+      }
+
       this.serviceWorkerRegistration = await navigator.serviceWorker.register(swPath, {
-        scope: scope,
+        scope: location.hostname === 'localhost' ? '/' : '/starter-project-with-vite/',
       });
 
       if (this.serviceWorkerRegistration.active) {
@@ -47,57 +37,24 @@ class PushNotificationService {
 
       return true;
     } catch (error) {
-      console.error('Service Worker registration failed:', {
-        message: error.message,
-        stack: error.stack,
-        environment: this.isDev ? 'Development' : 'Production',
-        swPath: this.swPath,
-        scope: this.scope,
-        hostname: location.hostname
-      });
+      console.error('Service Worker registration failed:', error);
       return false;
     }
   }
 
   async subscribe() {
     try {
-      if (!('Notification' in window)) {
-        console.error('Browser tidak mendukung Notification API');
-        return false;
-      }
-
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.error('Izin notifikasi tidak diberikan');
-        return false;
-      }
-
-      if (!this.serviceWorkerRegistration || !this.serviceWorkerRegistration.active) {
-        console.log('Service Worker belum aktif, mencoba menginisialisasi...');
-        const initialized = await this.init();
-        if (!initialized) {
-          console.error('Gagal menginisialisasi Service Worker');
-          return false;
-        }
-      }
       const existingSubscription = await this.serviceWorkerRegistration.pushManager.getSubscription();
       if (existingSubscription) {
         console.log('Sudah berlangganan push notification');
         return true;
       }
 
-      console.log('Mencoba mendapatkan subscription...');
       const subscription = await this.serviceWorkerRegistration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      if (!subscription) {
-        console.error('Gagal mendapatkan subscription');
-        return false;
-      }
-
-      console.log('Mengirim subscription ke server...');
       const response = await fetch(`${CONFIG.BASE_URL}/notifications/subscribe`, {
         method: 'POST',
         headers: {
@@ -114,12 +71,8 @@ class PushNotificationService {
       });
 
       if (!response.ok) {
-        const errorMessage = `Gagal mengirim subscription ke server: ${response.status} ${response.statusText}`;
-        console.error(errorMessage);
-        throw new Error(errorMessage);
+        throw new Error('Gagal berlangganan push notification: ' + response.status);
       }
-
-      console.log('Berhasil subscribe push notification');
 
       const result = await response.json();
       if (!result.error) {
@@ -129,11 +82,7 @@ class PushNotificationService {
 
       return false;
     } catch (error) {
-      console.error('Gagal melakukan subscribe push notification:', {
-        message: error.message,
-        stack: error.stack,
-        serviceWorkerStatus: this.serviceWorkerRegistration?.active ? 'active' : 'inactive',
-      });
+      console.error('Error saat berlangganan push notification:', error);
       return false;
     }
   }

@@ -57,13 +57,101 @@ export class App {
     }
 
     async setupPushNotifications() {
-        const isSupported = await pushNotificationService.init();
-        if (isSupported) {
-            // Check if user is logged in
+        // Skip if not in a secure context (HTTPS or localhost)
+        if (!window.isSecureContext) {
+            console.warn('Push notifications require a secure context (HTTPS or localhost)');
+            return;
+        }
+
+        // Check if push notifications are supported
+        if (!('serviceWorker' in navigator)) {
+            console.warn('Service workers are not supported in this browser');
+            return;
+        }
+
+        if (!('PushManager' in window)) {
+            console.warn('Push notifications are not supported in this browser');
+            return;
+        }
+
+        try {
+            console.log('Initializing push notifications...');
+            
+            // Check if we have a token
             const token = localStorage.getItem('token');
-            if (token) {
-                // Try to subscribe to push notifications
-                await pushNotificationService.subscribe();
+            if (!token) {
+                console.log('No auth token found, skipping push notification setup');
+                return;
+            }
+            
+            // Initialize push notification service
+            const isSupported = await pushNotificationService.init();
+            console.log('Push notification supported:', isSupported);
+            
+            if (isSupported) {
+                console.log('Subscribing to push notifications...');
+                // Use a small delay to prevent blocking the main thread
+                setTimeout(async () => {
+                    try {
+                        const success = await pushNotificationService.subscribe();
+                        console.log('Push notification subscription result:', success);
+                        
+                        if (success) {
+                            this.addPushNotificationTestButton();
+                        }
+                    } catch (error) {
+                        // Handle specific errors
+                        if (error.name === 'NotAllowedError') {
+                            console.warn('Push notification permission denied by user');
+                        } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                            console.warn('Failed to connect to push notification server. This might be a CORS issue or network error.');
+                            console.warn('Error details:', error);
+                        } else if (error.name === 'AbortError') {
+                            console.warn('Push subscription was aborted');
+                        } else {
+                            console.error('Failed to subscribe to push notifications:', error);
+                        }
+                    }
+                }, 1000); // 1 second delay
+            }
+        } catch (error) {
+            console.error('Error initializing push notifications:', error);
+            
+            // Log additional error details
+            if (error instanceof Error) {
+                console.error('Error name:', error.name);
+                console.error('Error message:', error.message);
+                if (error.stack) {
+                    console.error('Error stack:', error.stack);
+                }
+            }
+        }
+    }
+
+    addPushNotificationTestButton() {
+        // Only add the button if we're in development mode or for testing
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            const header = document.querySelector('header');
+            if (header) {
+                const testButton = document.createElement('button');
+                testButton.textContent = 'Test Push Notification';
+                testButton.className = 'btn btn-primary btn-sm';
+                testButton.style.position = 'fixed';
+                testButton.style.bottom = '20px';
+                testButton.style.right = '20px';
+                testButton.style.zIndex = '9999';
+                
+                testButton.addEventListener('click', async () => {
+                    try {
+                        await pushNotificationService.sendTestNotification();
+                        alert('Test notification sent!');
+                    } catch (error) {
+                        console.error('Error sending test notification:', error);
+                        alert('Failed to send test notification: ' + error.message);
+                    }
+                });
+                
+                document.body.appendChild(testButton);
             }
         }
     }

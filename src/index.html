@@ -8,11 +8,14 @@
     <title>Story Documentation</title>
     
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/starter-project-with-vite/manifest.json">
     <link rel="apple-touch-icon" href="/starter-project-with-vite/icons/icon-192x192.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Story">
+    <meta name="theme-color" content="#4A90E2">
+    <link rel="icon" href="/starter-project-with-vite/icons/icon-192x192.png">
+    <link rel="shortcut icon" href="/starter-project-with-vite/icons/icon-192x192.png">
     
     <!-- External CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -30,6 +33,7 @@
           <li><a href="#/stories"><i class="fas fa-book"></i> Stories</a></li>
           <li><a href="#/add-story"><i class="fas fa-plus-circle"></i> Add Story</a></li>
           <li><a href="#/saved-reports"><i class="fas fa-bookmark"></i> Lihat Laporan Tersimpan</a></li>
+          <li><a href="#/offline-stories"><i class="fas fa-cloud-download-alt"></i> Offline Stories</a></li>
           <li><button id="push-subscribe-btn" class="btn" style="margin-left: 1rem; border:1px solid #4A90E2; background:#fff; color:#4A90E2; vertical-align: middle;">Subscribe Notifikasi <i class="fa-solid fa-bell"></i></button></li>
         </ul>
       </nav>
@@ -48,18 +52,40 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script type="module" src="scripts/index.js"></script>
     
-    <!-- Service Worker Registration -->
-    <script>
+    <!-- PWA Service Worker Registration -->
+    <script type="module">
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          const swPath = '/starter-project-with-vite/sw.js';
-          navigator.serviceWorker.register(swPath)
-            .then(registration => {
-              console.log('ServiceWorker registration successful');
-            })
-            .catch(err => {
-              console.log('ServiceWorker registration failed: ', err);
+        window.addEventListener('load', async () => {
+          try {
+            const registration = await navigator.serviceWorker.register('/sw.js', {
+              type: 'module',
+              scope: '/'
             });
+            
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('New content is available; please refresh.');
+                }
+              });
+            });
+            
+            // Handle updates
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              if (!refreshing) {
+                window.location.reload();
+                refreshing = true;
+              }
+            });
+            
+          } catch (error) {
+            console.error('ServiceWorker registration failed: ', error);
+          }
         });
       }
     </script>

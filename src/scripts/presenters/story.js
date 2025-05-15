@@ -86,14 +86,19 @@ export class StoryPresenter {
                 const result = await this.model.login(credentials);
                 if (!result.error) {
                     // Subscribe to notifications after successful login
-                    try {
-                        const subscription = await this.view.registerServiceWorker();
-                        if (subscription) {
-                            await this.model.subscribeToNotifications(subscription);
+                    // Kita lakukan ini secara asinkron dan tidak menunggu hasilnya
+                    // untuk menghindari masalah logout otomatis
+                    setTimeout(async () => {
+                        try {
+                            const subscription = await this.view.registerServiceWorker();
+                            if (subscription) {
+                                await this.model.subscribeToNotifications(subscription);
+                            }
+                        } catch (error) {
+                            console.error('Failed to subscribe to notifications:', error);
+                            // Jangan throw error di sini untuk mencegah logout otomatis
                         }
-                    } catch (error) {
-                        console.error('Failed to subscribe to notifications:', error);
-                    }
+                    }, 2000); // Delay 2 detik untuk memastikan login sudah selesai
 
                     // --- Sinkronisasi Komentar (per laporan) ---
                     // Nonaktifkan sinkronisasi saved reports karena endpoint tidak tersedia
@@ -108,7 +113,8 @@ export class StoryPresenter {
                     this.view.showError(result.message || 'Login failed');
                 }
             } catch (error) {
-                this.view.showError('Login failed: ' + error.message);
+                console.error('Login error:', error);
+                this.view.showError('An error occurred during login. Please try again.');
             }
         });
     }
@@ -175,10 +181,12 @@ export class StoryPresenter {
                     : await this.model.addStory(storyData);
 
                 if (!result.error) {
-                    this.view.showSuccess('Story added successfully!');
-                    showLocalNotification('Story berhasil dibuat', {
-                      body: `Anda telah membuat story baru dengan deskripsi: ${storyData.description}`
+                    this.view.showSuccess('Cerita berhasil disimpan!');
+                    showLocalNotification('Cerita berhasil disimpan', {
+                      body: `Cerita Anda telah berhasil disimpan dengan deskripsi: ${storyData.description}`
                     });
+                    // Redirect to stories page after successful submission
+                    window.location.hash = '#/stories';
                 } else {
                     this.view.showError(result.message);
                 }

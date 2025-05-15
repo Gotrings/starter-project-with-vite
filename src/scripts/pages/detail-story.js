@@ -1,6 +1,5 @@
 import { StoryModel } from '../models/story.js';
-// import { StoryView } from '../views/story.js';
-// import { StoryPresenter } from '../presenters/story.js';
+import IndexedDBService from '../services/idb.js';
 import { saveReport, addComment, getCommentsByStoryId, deleteComment } from '../utils/index.js';
 import pushNotificationService from '../services/pushNotification.js';
 import { showLocalNotification } from '../index.js';
@@ -8,8 +7,7 @@ import { showLocalNotification } from '../index.js';
 class DetailStoryPage {
   constructor() {
     this.model = new StoryModel();
-    // this.view = new StoryView();
-    // this.presenter = new StoryPresenter(this.model, this.view);
+    this.storyModel = new StoryModel();
   }
 
   async render() {
@@ -49,6 +47,13 @@ class DetailStoryPage {
       const photoUrl = story.photoUrl || '';
       const description = story.description || '-';
       const ownerName = story.owner && story.owner.name ? story.owner.name : '-';
+
+      // Save story to IndexedDB
+      try {
+        await IndexedDBService.addStory(story);
+      } catch (dbError) {
+        console.warn(`Could not save story ${storyId} to IndexedDB:`, dbError);
+      }
 
       detailContainer.innerHTML = `
         <div class="detail-story">
@@ -143,7 +148,7 @@ class DetailStoryPage {
           } else {
             alert('Laporan berhasil disimpan!');
           }
-          showLocalNotification('Notifikasi Laporan!', 'Laporan kamu berhasil disimpan!');
+          showLocalNotification('Story Notification', 'Laporan telah tersimpan');
         } catch (error) {
           console.error('Error saving report:', error);
           if (this.view && this.view.showError) {
@@ -191,7 +196,7 @@ class DetailStoryPage {
         await addComment(story.id, user, message);
         textarea.value = '';
         renderComments();
-        showLocalNotification('Notifikasi Komentar!', `Ada komentar yang perlu kamu cek segera! Komentarnya: ${message}`);
+        showLocalNotification('Story Notification', 'Komentar kamu berhasil di tambahkan');
       });
 
     } catch (error) {
