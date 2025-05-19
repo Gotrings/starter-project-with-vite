@@ -1,5 +1,6 @@
 import { StoryModel } from '../models/story.js';
-import IndexedDBService from '../services/idb.js';
+// import { StoryView } from '../views/story.js';
+// import { StoryPresenter } from '../presenters/story.js';
 import { saveReport, addComment, getCommentsByStoryId, deleteComment } from '../utils/index.js';
 import pushNotificationService from '../services/pushNotification.js';
 import { showLocalNotification } from '../index.js';
@@ -7,7 +8,8 @@ import { showLocalNotification } from '../index.js';
 class DetailStoryPage {
   constructor() {
     this.model = new StoryModel();
-    this.storyModel = new StoryModel();
+    // this.view = new StoryView();
+    // this.presenter = new StoryPresenter(this.model, this.view);
   }
 
   async render() {
@@ -47,13 +49,6 @@ class DetailStoryPage {
       const photoUrl = story.photoUrl || '';
       const description = story.description || '-';
       const ownerName = story.owner && story.owner.name ? story.owner.name : '-';
-
-      // Save story to IndexedDB
-      try {
-        await IndexedDBService.addStory(story);
-      } catch (dbError) {
-        console.warn(`Could not save story ${storyId} to IndexedDB:`, dbError);
-      }
 
       detailContainer.innerHTML = `
         <div class="detail-story">
