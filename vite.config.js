@@ -1,10 +1,8 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  base: '/starter-project-with-vite/', // <-- tambahkan ini
-  root: resolve(__dirname, 'src'),
+  base: '/starter-project-with-vite/',
   publicDir: resolve(__dirname, 'public'),
   build: {
     outDir: resolve(__dirname, 'dist'),
