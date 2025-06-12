@@ -1,15 +1,9 @@
-import DetailStoryPage from '../pages/detail-story.js';
+import HomePage from '../pages/home/home-page';
+import AboutPage from '../pages/about/about-page';
 
 const routes = {
-  '/': 'home',
-  '/home': 'home',
-  '/login': 'login',
-  '/register': 'register',
-  '/stories': 'stories',
-  '/detail': new DetailStoryPage(),
-  '/saved-reports': 'saved-reports',
-  '/add-story': 'add-story',
-  '/add-story-guest': 'add-story-guest'
+  '/': new HomePage(),
+  '/about': new AboutPage(),
 };
 
 export default routes;

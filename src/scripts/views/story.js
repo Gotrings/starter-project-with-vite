@@ -1,14 +1,8 @@
+import { StoryModel } from '../models/story.js';
+
 export class StoryView {
     constructor() {
         this.appElement = document.getElementById('app');
-        if (!this.appElement) {
-            // Fallback: buat elemen #app jika belum ada
-            const mainContent = document.getElementById('main-content') || document.body;
-            this.appElement = document.createElement('div');
-            this.appElement.id = 'app';
-            mainContent.appendChild(this.appElement);
-            console.error('Element #app tidak ditemukan, membuat baru.');
-        }
         this.map = null;
         this.markers = null;
         this.cameraStream = null;
@@ -59,18 +53,42 @@ export class StoryView {
 
     async registerServiceWorker() {
         try {
-            let swPath = '/sw.js';
-            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-                swPath = '/starter-project-with-vite/sw.js';
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            
+            // Check if notifications are enabled
+            const notificationEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+            
+            if (notificationEnabled) {
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: 'BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk'
+                });
+
+                // Subscribe to notifications
+                if (subscription) {
+                    const storyModel = new StoryModel();
+                    await storyModel.subscribeToNotifications({
+                        endpoint: subscription.endpoint,
+                        keys: {
+                            p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+                            auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))))
+                        }
+                    });
+                }
             }
-            const registration = await navigator.serviceWorker.register(swPath);
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: 'BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk'
-            });
-            return subscription;
+
+            return registration;
         } catch (error) {
             console.error('Error registering service worker:', error);
+        }
+    }
+
+    async sendNotification(title, options) {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            await registration.showNotification(title, options);
+        } catch (error) {
+            console.error('Error sending notification:', error);
         }
     }
 
@@ -164,47 +182,6 @@ export class StoryView {
 
         this.initializeMap(stories);
     }
-    
-    bindStoryDetailButtons(handler) {
-        const detailButtons = this.appElement.querySelectorAll('.btn-detail');
-        detailButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const storyId = button.getAttribute('data-id');
-                handler(storyId);
-            });
-        });
-    }
-    
-    bindAddStoryButton(handler) {
-        const addStoryBtn = document.getElementById('add-story-btn');
-        if (addStoryBtn) {
-            addStoryBtn.addEventListener('click', handler);
-        }
-    }
-    
-    bindAddStoryGuestButton(handler) {
-        const addStoryGuestBtn = document.getElementById('add-story-guest-btn');
-        if (addStoryGuestBtn) {
-            addStoryGuestBtn.addEventListener('click', handler);
-        }
-    }
-    
-    bindStoryForm(handler) {
-        const form = document.getElementById('story-form');
-        if (!form) return;
-        
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const storyData = {
-                description: formData.get('description'),
-                photo: formData.get('photo'),
-                lat: formData.get('lat'),
-                lon: formData.get('lon')
-            };
-            handler(storyData);
-        });
-    }
 
     createStoryCard(story) {
         return `
@@ -217,12 +194,101 @@ export class StoryView {
                         <p>Location: ${story.lat}, ${story.lon}</p>
                     ` : ''}
                     <p>Created: ${new Date(story.createdAt).toLocaleDateString()}</p>
-                    <button class="btn btn-detail" data-id="${story.id}">
+                    <button class="btn view-details" data-id="${story.id}">
                         <i class="fas fa-info-circle"></i> Selengkapnya
                     </button>
                 </div>
             </article>
         `;
+    }
+
+    renderStoryDetail(story) {
+        this.appElement.innerHTML = `
+            <section class="story-detail">
+                <button class="btn back-btn" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </button>
+                <div class="detail-content">
+                    <h2>${story.name}</h2>
+                    <div class="detail-info">
+                        <p><i class="fas fa-user"></i> Pembuat: ${story.name}</p>
+                        <p><i class="fas fa-calendar"></i> Tanggal Dibuat: ${new Date(story.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div class="detail-image">
+                        <img src="${story.photoUrl}" alt="${story.description}">
+                    </div>
+                    <div class="detail-description">
+                        <h3>Deskripsi</h3>
+                        <p>${story.description}</p>
+                    </div>
+                    ${story.lat && story.lon ? `
+                        <div class="detail-location">
+                            <h3>Lokasi</h3>
+                            <div id="detail-map" class="map-container"></div>
+                            <div class="coordinates">
+                                <p><i class="fas fa-map-marker-alt"></i> Latitude: ${story.lat}</p>
+                                <p><i class="fas fa-map-marker-alt"></i> Longitude: ${story.lon}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <button class="btn save-report" data-id="${story.id}">
+                        <i class="fas fa-save"></i> Simpan Laporan
+                    </button>
+                </div>
+            </section>
+        `;
+
+        // Initialize map if location exists
+        if (story.lat && story.lon) {
+            this.initializeDetailMap(story);
+        }
+
+        // Add event listener for save report button
+        const saveButton = this.appElement.querySelector('.save-report');
+        if (saveButton) {
+            saveButton.addEventListener('click', () => {
+                this.saveReport(story);
+            });
+        }
+    }
+
+    initializeDetailMap(story) {
+        const map = L.map('detail-map').setView([story.lat, story.lon], 13);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker([story.lat, story.lon])
+            .addTo(map)
+            .bindPopup(`
+                <div class="story-popup">
+                    <h3>${story.name}</h3>
+                    <p>${story.description}</p>
+                </div>
+            `);
+    }
+
+    saveReport(story) {
+        const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
+        
+        // Check if story is already saved
+        const isAlreadySaved = savedReports.some(report => report.id === story.id);
+        
+        if (isAlreadySaved) {
+            this.showError('Laporan sudah tersimpan');
+            return;
+        }
+
+        // Add savedAt timestamp
+        const reportToSave = {
+            ...story,
+            savedAt: new Date().toISOString()
+        };
+
+        savedReports.push(reportToSave);
+        localStorage.setItem('savedReports', JSON.stringify(savedReports));
+        this.showSuccess('Laporan berhasil disimpan');
     }
 
     renderAddStory(isGuest = false) {
@@ -448,86 +514,84 @@ export class StoryView {
         });
     }
 
-    // Metode ini tidak lagi diperlukan karena sudah digantikan oleh bindStoryForm
-    // yang mengikuti prinsip MVP dengan lebih baik
     setupStoryForm() {
-        // Metode ini dipertahankan untuk kompatibilitas dengan kode lama
-        // tetapi tidak melakukan apa-apa karena fungsionalitasnya
-        // sudah dipindahkan ke bindStoryForm
-        console.warn('setupStoryForm() is deprecated, use bindStoryForm() instead');
+        const storyForm = document.getElementById('story-form');
+        storyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(storyForm);
+            const description = formData.get('description');
+            const photo = formData.get('photo');
+            const lat = formData.get('lat');
+            const lon = formData.get('lon');
+
+            try {
+                // Show loading state
+                const submitBtn = storyForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+
+                // Here you would typically send the data to your backend
+                // For now, we'll simulate a successful submission
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Show success message
+                this.showSuccess('Story submitted successfully!');
+
+                // Redirect to stories page
+                window.location.hash = '#/stories';
+            } catch (error) {
+                this.showError('Failed to submit story');
+                console.error('Error submitting story:', error);
+            } finally {
+                // Reset button state
+                const submitBtn = storyForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Story';
+            }
+        });
     }
 
-    renderDetail(content) {
-        this.appElement.innerHTML = '';
-        this.appElement.appendChild(content);
-    }
-
-    renderNotFound(data) {
+    renderSavedReports(reports) {
         this.appElement.innerHTML = `
-            <section class="not-found">
-                <h2>${data.title}</h2>
-                <p>${data.message}</p>
-                <button class="btn" id="not-found-back-btn">${data.buttonText}</button>
+            <section class="saved-reports">
+                <h2>Saved Reports</h2>
+                ${reports.length === 0 ? `
+                    <p class="no-reports">No saved reports yet.</p>
+                ` : `
+                    <div class="reports-grid">
+                        ${reports.map(report => `
+                            <article class="report-card">
+                                <img src="${report.photoUrl}" alt="${report.description}" loading="lazy">
+                                <div class="report-content">
+                                    <h3>${report.name}</h3>
+                                    <p>${report.description}</p>
+                                    ${report.lat && report.lon ? `
+                                        <p>Location: ${report.lat}, ${report.lon}</p>
+                                    ` : ''}
+                                    <p>Saved: ${new Date(report.savedAt).toLocaleDateString()}</p>
+                                    <button class="btn delete-report" data-id="${report.id}">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </article>
+                        `).join('')}
+                    </div>
+                `}
             </section>
         `;
-        
-        const backButton = document.getElementById('not-found-back-btn');
-        if (backButton) {
-            backButton.addEventListener('click', () => {
-                window.location.hash = data.buttonAction;
+
+        // Add event listeners for delete buttons
+        const deleteButtons = this.appElement.querySelectorAll('.delete-report');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const reportId = button.dataset.id;
+                const reports = JSON.parse(localStorage.getItem('savedReports') || '[]');
+                const updatedReports = reports.filter(report => report.id !== reportId);
+                localStorage.setItem('savedReports', JSON.stringify(updatedReports));
+                this.showSuccess('Report deleted successfully');
+                this.renderSavedReports(updatedReports);
             });
-        }
-    }
-    
-    bindLoginButton(handler) {
-        const loginBtn = document.getElementById('login-btn');
-        if (loginBtn) {
-            loginBtn.addEventListener('click', handler);
-        }
-    }
-    
-    bindRegisterButton(handler) {
-        const registerBtn = document.getElementById('register-btn');
-        if (registerBtn) {
-            registerBtn.addEventListener('click', handler);
-        }
-    }
-    
-    bindLogoutButton(handler) {
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', handler);
-        }
-    }
-    
-    bindLoginForm(handler) {
-        const form = document.getElementById('login-form');
-        if (!form) return;
-        
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const credentials = {
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
-            handler(credentials);
         });
     }
-    
-    bindRegisterForm(handler) {
-        const form = document.getElementById('register-form');
-        if (!form) return;
-        
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const userData = {
-                name: formData.get('name'),
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
-            handler(userData);
-        });
-    }
-}
+} 

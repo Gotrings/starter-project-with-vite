@@ -1,7 +1,16 @@
 export class StoryModel {
     constructor() {
         this.baseUrl = 'https://story-api.dicoding.dev/v1';
-        this.token = localStorage.getItem('token') || null;
+        this.token = localStorage.getItem('token');
+    }
+
+    setToken(token) {
+        this.token = token;
+        if (token) {
+            localStorage.setItem('token', token);
+        } else {
+            localStorage.removeItem('token');
+        }
     }
 
     async register(userData) {
@@ -13,7 +22,6 @@ export class StoryModel {
                 },
                 body: JSON.stringify(userData),
             });
-            if (!response.ok) throw new Error(`Register failed: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('Error registering:', error);
@@ -23,53 +31,26 @@ export class StoryModel {
 
     async login(credentials) {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
             const response = await fetch(`${this.baseUrl}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(credentials),
-                signal: controller.signal
             });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Login failed: ${response.status}`);
-            }
-
             const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.message || 'Login failed');
+            if (!data.error && data.loginResult?.token) {
+                this.setToken(data.loginResult.token);
             }
-
-            if (!data.loginResult || !data.loginResult.token) {
-                throw new Error('Invalid response format: missing token');
-            }
-
-            this.token = data.loginResult.token;
-            localStorage.setItem('token', this.token);
             return data;
         } catch (error) {
             console.error('Error logging in:', error);
-            if (error.name === 'AbortError') {
-                throw new Error('Login request timed out. Please check your internet connection.');
-            }
-            if (error.message.includes('Failed to fetch')) {
-                throw new Error('Cannot connect to the server. Please check your internet connection.');
-            }
             throw error;
         }
     }
 
     logout() {
-        this.token = null;
-        localStorage.removeItem('token');
+        this.setToken(null);
     }
 
     async getStories(page = 1, size = 10, location = 0) {
@@ -83,6 +64,12 @@ export class StoryModel {
                 `${this.baseUrl}/stories?page=${page}&size=${size}&location=${location}`,
                 { headers }
             );
+
+            if (response.status === 401) {
+                // Token is invalid or expired
+                this.setToken(null);
+                throw new Error('Session expired. Please login again.');
+            }
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -118,7 +105,7 @@ export class StoryModel {
                 headers,
                 body: formData,
             });
-            if (!response.ok) throw new Error(`Add story failed: ${response.status}`);
+
             return await response.json();
         } catch (error) {
             console.error('Error adding story:', error);
@@ -138,7 +125,7 @@ export class StoryModel {
                 method: 'POST',
                 body: formData,
             });
-            if (!response.ok) throw new Error(`Add story as guest failed: ${response.status}`);
+
             return await response.json();
         } catch (error) {
             console.error('Error adding story as guest:', error);
@@ -154,10 +141,21 @@ export class StoryModel {
                     'Authorization': `Bearer ${this.token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(subscription),
+                body: JSON.stringify({
+                    endpoint: subscription.endpoint,
+                    keys: {
+                        p256dh: subscription.keys.p256dh,
+                        auth: subscription.keys.auth
+                    }
+                }),
             });
-            if (!response.ok) throw new Error(`Subscribe to notifications failed: ${response.status}`);
-            return await response.json();
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.message);
+            }
+
+            return data;
         } catch (error) {
             console.error('Error subscribing to notifications:', error);
             throw error;
@@ -174,27 +172,27 @@ export class StoryModel {
                 },
                 body: JSON.stringify({ endpoint }),
             });
-            if (!response.ok) throw new Error(`Unsubscribe from notifications failed: ${response.status}`);
-            return await response.json();
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.message);
+            }
+
+            return data;
         } catch (error) {
             console.error('Error unsubscribing from notifications:', error);
             throw error;
         }
     }
 
-    async getStoryById(storyId) {
+    async getStoryById(id) {
         try {
-            let headers = {};
+            const headers = {};
             if (this.token) {
                 headers['Authorization'] = `Bearer ${this.token}`;
             }
 
-            let response = await fetch(`${this.baseUrl}/stories/${storyId}`, { headers });
-
-            // Jika gagal 401 dan ada token, coba ulangi tanpa token (public)
-            if (response.status === 401 && this.token) {
-                response = await fetch(`${this.baseUrl}/stories/${storyId}`);
-            }
+            const response = await fetch(`${this.baseUrl}/stories/${id}`, { headers });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
