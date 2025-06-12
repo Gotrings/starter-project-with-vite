@@ -5,3 +5,5 @@ Map Service: OpenStreetMap
 API Documentation: https://www.openstreetmap.org/
 
 Story API Documentation: https://story-api.dicoding.dev/v1/docs
+
+https://github.com/Gotrings/starter-project-with-vite
