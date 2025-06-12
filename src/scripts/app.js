@@ -3,7 +3,11 @@ import { StoryView } from './views/story.js';
 import { StoryPresenter } from './presenters/story.js';
 
 class App {
-    constructor() {
+    constructor({ content, drawerButton, navigationDrawer }) {
+        this.content = content;
+        this.drawerButton = drawerButton;
+        this.navigationDrawer = navigationDrawer;
+        
         this.model = new StoryModel();
         this.view = new StoryView();
         this.presenter = new StoryPresenter(this.model, this.view);
@@ -11,6 +15,7 @@ class App {
         this.setupRouter();
         this.setupViewTransitions();
         this.setupSkipToContent();
+        this.setupNavigation();
     }
 
     setupSkipToContent() {
@@ -53,7 +58,11 @@ class App {
             });
         });
     }
+
+    setupNavigation() {
+        // Add implementation for setupNavigation method
+    }
 }
 
-// Initialize the app
-new App(); 
+// Ekspor App untuk digunakan di index.js
+export default App;
