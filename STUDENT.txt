@@ -1,7 +1,0 @@
-Nama: Keanu Dustin Kemala
-ID Dicoding: FC824D5Y0034
-
-Map Service: OpenStreetMap
-API Documentation: https://www.openstreetmap.org/
-
-Story API Documentation: https://story-api.dicoding.dev/v1/docs
