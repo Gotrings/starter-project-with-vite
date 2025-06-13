@@ -53,7 +53,9 @@ export class StoryView {
 
     async registerServiceWorker() {
         try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
+            const baseUrl = import.meta.env.BASE_URL || '/';
+            const swUrl = `${baseUrl}sw.js`;
+            const registration = await navigator.serviceWorker.register(swUrl);
             
             // Check if notifications are enabled
             const notificationEnabled = localStorage.getItem('notificationsEnabled') === 'true';
