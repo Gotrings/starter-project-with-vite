@@ -2,8 +2,30 @@ export class StoryPresenter {
     constructor(model, view) {
         this.model = model;
         this.view = view;
-        this.notificationEnabled = localStorage.getItem('notificationsEnabled') === 'true';
-        this.setupNotificationToggle();
+        // Initialize with false by default, will be updated when service worker is ready
+        this.notificationEnabled = false;
+        this.initializeNotifications();
+    }
+
+    async initializeNotifications() {
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                // Update state based on existing subscription
+                const storedState = localStorage.getItem('notificationsEnabled') === 'true';
+                this.notificationEnabled = subscription !== null && storedState;
+                this.setupNotificationToggle();
+            } catch (error) {
+                console.error('Error initializing notifications:', error);
+                this.notificationEnabled = false;
+                this.setupNotificationToggle();
+            }
+        } else {
+            console.warn('Service workers are not supported in this browser');
+            this.notificationEnabled = false;
+            this.setupNotificationToggle();
+        }
     }
 
     setupNotificationToggle() {
@@ -26,8 +48,7 @@ export class StoryPresenter {
                             await this.model.unsubscribeFromNotifications(subscription.endpoint);
                         }
                         this.notificationEnabled = false;
-                        localStorage.setItem('notificationsEnabled', 'false');
-                        this.view.showSuccess('Notifications disabled');
+                        this.updateNotificationStatus();
                     } catch (error) {
                         console.error('Error disabling notifications:', error);
                         this.view.showError('Failed to disable notifications');
@@ -48,23 +69,27 @@ export class StoryPresenter {
                             }
                         });
                         this.notificationEnabled = true;
-                        localStorage.setItem('notificationsEnabled', 'true');
-                        this.view.showSuccess('Notifications enabled');
+                        this.updateNotificationStatus();
                     } catch (error) {
                         console.error('Error enabling notifications:', error);
                         this.view.showError('Failed to enable notifications');
                     }
                 }
-                this.updateNotificationStatus();
             });
         }
     }
 
     updateNotificationStatus() {
         const notificationStatus = document.getElementById('notification-status');
+        const notificationIcon = document.querySelector('#notification-toggle i');
         if (notificationStatus) {
             notificationStatus.textContent = this.notificationEnabled ? 'Notifikasi Hidup' : 'Notifikasi Mati';
         }
+        if (notificationIcon) {
+            notificationIcon.className = this.notificationEnabled ? 'fas fa-bell' : 'fas fa-bell-slash';
+        }
+        // Update local storage
+        localStorage.setItem('notificationsEnabled', String(this.notificationEnabled));
     }
 
     async handleRoute(hash) {

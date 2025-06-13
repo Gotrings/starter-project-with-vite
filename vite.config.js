@@ -12,9 +12,14 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
+    assetsDir: '.',
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/index.html')
+        main: resolve(__dirname, 'src/index.html'),
+        sw: resolve(__dirname, 'public/sw.js')
+      },
+      output: {
+        entryFileNames: '[name].js'
       }
     }
   },
@@ -32,19 +37,6 @@ export default defineConfig({
     },
     proxy: {
       // Add any API proxies if needed
-    }
-  },
-  build: {
-    outDir: 'dist',
-    assetsDir: '.',
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        sw: resolve(__dirname, 'public/sw.js')
-      },
-      output: {
-        entryFileNames: '[name].js'
-      }
     }
   },
   plugins: [
