@@ -2,6 +2,33 @@ import { StoryModel } from './models/story.js';
 import { StoryView } from './views/story.js';
 import { StoryPresenter } from './presenters/story.js';
 
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        
+        // Check for updates
+        registration.update().catch(err => 
+          console.log('Error checking for service worker updates:', err)
+        );
+      })
+      .catch(err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+  });
+}
+
+// Listen for controllerchange event to handle service worker updates
+let refreshing = false;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+  if (!refreshing) {
+    window.location.reload();
+    refreshing = true;
+  }
+});
+
 class App {
     constructor() {
         this.model = new StoryModel();
