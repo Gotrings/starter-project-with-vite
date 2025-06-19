@@ -3,21 +3,29 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#4f46e5">
     <meta name="description" content="Aplikasi berbagi cerita">
+    
+    <!-- PWA Capabilities -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Stories">
+    
+    <!-- Icons and Manifest -->
     <link rel="manifest" href="/starter-project-with-vite/manifest.json">
-    <link rel="apple-touch-icon" href="./icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512x512.png">
-    <link rel="shortcut icon" href="./favicon.ico">
+    <link rel="apple-touch-icon" href="/starter-project-with-vite/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/starter-project-with-vite/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/starter-project-with-vite/icon-512x512.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    
+    <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#4f46e5">
-    <meta name="msapplication-TileImage" content="./icon-192x192.png">
+    <meta name="msapplication-TileImage" content="/icon-192x192.png">
     <meta name="application-name" content="Stories App">
-    <meta name="apple-mobile-web-app-title" content="Stories">
+    
     <title>Story Documentation</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -25,8 +33,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css">
     <script type="module" crossorigin src="/starter-project-with-vite/main.js"></script>
-    <link rel="stylesheet" crossorigin href="/starter-project-with-vite/main-Dc0enELs.css">
-  <link rel="manifest" href="/starter-project-with-vite/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/starter-project-with-vite/registerSW.js"></script></head>
+    <link rel="stylesheet" crossorigin href="/starter-project-with-vite/main-iBaBoEFZ.css">
+  
+          <link rel="manifest" href="/starter-project-with-vite/manifest.json" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/starter-project-with-vite/icon-192x192.png">
+          <link rel="apple-touch-icon" href="/starter-project-with-vite/icon-192x192.png">
+          <meta name="theme-color" content="#4f46e5">
+          <meta name="mobile-web-app-capable" content="yes">
+          <meta name="apple-mobile-web-app-capable" content="yes">
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+          <meta name="apple-mobile-web-app-title" content="Stories">
+          <meta name="description" content="Aplikasi berbagi cerita">
+          </head>
   <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
     
@@ -39,6 +57,11 @@
           <li><a href="#/add-story"><i class="fas fa-plus-circle"></i> Add Story</a></li>
           <li><a href="#/saved-reports"><i class="fas fa-save"></i> Simpan Laporan</a></li>
           <li><a href="#" id="notification-toggle"><i class="fas fa-bell"></i> <span id="notification-status">Notifikasi</span></a></li>
+          <li id="install-button-container" style="display: none;">
+            <a href="#" id="install-button" class="install-button">
+              <i class="fas fa-download"></i> Install App
+            </a>
+          </li>
         </ul>
       </nav>
     </header>
@@ -85,5 +108,44 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="/starter-project-with-vite/register-sw.js"></script>
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                console.log('New service worker found:', newWorker);
+                
+                newWorker.addEventListener('statechange', () => {
+                  console.log('Service worker state changed to:', newWorker.state);
+                });
+              });
+              
+              // Check if there's a waiting service worker
+              if (registration.waiting) {
+                console.log('Service worker waiting to activate');
+              }
+              
+              if (registration.active) {
+                console.log('Service worker active');
+              }
+            })
+            .catch(error => {
+              console.error('ServiceWorker registration failed: ', error);
+            });
+          
+          // Listen for controller changes
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('Controller changed, reloading page...');
+            window.location.reload();
+          });
+        });
+      }
+    </script>
   </body>
 </html>
