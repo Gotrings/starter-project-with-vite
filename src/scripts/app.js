@@ -5,18 +5,39 @@ import { StoryPresenter } from './presenters/story.js';
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    // Register the service worker
+    navigator.serviceWorker.register('/sw-new.js', { scope: '/' })
       .then(registration => {
         console.log('ServiceWorker registration successful with scope: ', registration.scope);
         
+        // Check for service worker updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          console.log('New service worker found:', newWorker);
+          
+          newWorker.addEventListener('statechange', () => {
+            console.log('Service worker state changed to:', newWorker.state);
+          });
+        });
+        
         // Check for updates
-        registration.update().catch(err => 
-          console.log('Error checking for service worker updates:', err)
-        );
+        if (registration.waiting) {
+          console.log('Service worker waiting to activate');
+        }
+        
+        if (registration.active) {
+          console.log('Service worker active');
+        }
       })
       .catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
+        console.error('ServiceWorker registration failed: ', err);
       });
+    
+    // Listen for controller changes
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('Controller changed, reloading page...');
+      window.location.reload();
+    });
   });
 }
 
