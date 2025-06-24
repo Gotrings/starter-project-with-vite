@@ -197,6 +197,29 @@ const getFromCache = async (request) => {
 
 // Fetch event - serve from cache, falling back to network
 self.addEventListener('fetch', (event) => {
+  // Tambahan: cache gambar story (jpg, jpeg, png, webp, dst)
+  if (event.request.destination === 'image') {
+    event.respondWith(
+      caches.open('story-images').then(async (cache) => {
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        try {
+          const networkResponse = await fetch(event.request);
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        } catch (err) {
+          // Jika offline dan tidak ada di cache, return fallback image
+          return caches.match('/starter-project-with-vite/img-fallback.png');
+        }
+      })
+    );
+    return;
+  }
+
   // Skip non-GET requests and non-http(s) requests
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;

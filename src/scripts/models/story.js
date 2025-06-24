@@ -80,9 +80,26 @@ export class StoryModel {
                 throw new Error(data.message);
             }
 
+            // Simpan stories ke localStorage untuk offline cache
+            try {
+                localStorage.setItem('cachedStories', JSON.stringify(data.listStory));
+            } catch (e) {
+                console.warn('Gagal menyimpan stories ke cache:', e);
+            }
+
             return data.listStory;
         } catch (error) {
             console.error('Error fetching stories:', error);
+            // Fallback: Ambil stories dari localStorage jika ada
+            const cached = localStorage.getItem('cachedStories');
+            if (cached) {
+                try {
+                    const stories = JSON.parse(cached);
+                    return stories;
+                } catch (e) {
+                    throw error;
+                }
+            }
             throw error;
         }
     }

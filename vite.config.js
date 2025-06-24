@@ -62,6 +62,11 @@ export default defineConfig({
     },
     proxy: {
       // Add any API proxies if needed
+    },
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
     }
   },
   plugins: [
@@ -106,21 +111,4 @@ export default defineConfig({
       apply: 'serve',
     },
   ],
-  // Ensure proper base URL handling in development
-  server: {
-    port: 5173,
-    strictPort: true,
-    open: '/starter-project-with-vite/',
-    fs: {
-      strict: false
-    },
-    proxy: {
-      // Add any API proxies if needed
-    },
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
-    }
-  },
 });
