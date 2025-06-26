@@ -1,6 +1,7 @@
 import { StoryModel } from './models/story.js';
 import { StoryView } from './views/story.js';
 import { StoryPresenter } from './presenters/story.js';
+import { databaseService } from './services/database.js';
 
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
@@ -59,6 +60,34 @@ class App {
         this.setupRouter();
         this.setupViewTransitions();
         this.setupSkipToContent();
+        this.setupSaveReportHandler();
+        
+        // Initialize the database
+        databaseService.init().catch(console.error);
+    }
+    
+    setupSaveReportHandler() {
+        // Listen for custom 'saveReport' events
+        document.addEventListener('saveReport', async (event) => {
+            try {
+                const reportData = event.detail;
+                const reportId = await databaseService.saveReport(reportData);
+                console.log('Report saved with ID:', reportId);
+                
+                // Dispatch an event to notify that the report was saved
+                const savedEvent = new CustomEvent('reportSaved', { 
+                    detail: { ...reportData, id: reportId } 
+                });
+                document.dispatchEvent(savedEvent);
+                
+            } catch (error) {
+                console.error('Failed to save report:', error);
+                const errorEvent = new CustomEvent('reportSaveError', { 
+                    detail: { error: error.message || 'Failed to save report' } 
+                });
+                document.dispatchEvent(errorEvent);
+            }
+        });
     }
 
     setupSkipToContent() {
