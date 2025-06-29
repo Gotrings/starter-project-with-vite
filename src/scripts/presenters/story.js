@@ -320,8 +320,13 @@ export class StoryPresenter {
         });
     }
 
-    handleSavedReports() {
-        const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
-        this.view.renderSavedReports(savedReports);
+    async handleSavedReports() {
+        try {
+            // This will trigger the view to fetch reports from IndexedDB
+            await this.view.renderSavedReports();
+        } catch (error) {
+            console.error('Error handling saved reports:', error);
+            this.view.showError('Gagal memuat laporan tersimpan');
+        }
     }
 } 

@@ -1,4 +1,5 @@
 import { StoryModel } from '../models/story.js';
+import { databaseService } from '../services/database.js';
 
 export class StoryView {
     constructor() {
@@ -271,26 +272,29 @@ export class StoryView {
             `);
     }
 
-    saveReport(story) {
-        const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
-        
-        // Check if story is already saved
-        const isAlreadySaved = savedReports.some(report => report.id === story.id);
-        
-        if (isAlreadySaved) {
-            this.showError('Laporan sudah tersimpan');
-            return;
+    async saveReport(story) {
+        try {
+            await databaseService.saveReport(story);
+            this.showSuccess('Laporan berhasil disimpan');
+            return true;
+        } catch (error) {
+            console.error('Error saving report:', error);
+            this.showError(error.message || 'Gagal menyimpan laporan');
+            
+            // If it's a database error, try to reinitialize the database
+            if (error.name === 'NotFoundError' || error.message.includes('object store')) {
+                try {
+                    await databaseService.clearAndReinit();
+                    // Retry saving after reinitialization
+                    await databaseService.saveReport(story);
+                    this.showSuccess('Laporan berhasil disimpan');
+                    return true;
+                } catch (retryError) {
+                    console.error('Error retrying save after reinitialization:', retryError);
+                }
+            }
+            return false;
         }
-
-        // Add savedAt timestamp
-        const reportToSave = {
-            ...story,
-            savedAt: new Date().toISOString()
-        };
-
-        savedReports.push(reportToSave);
-        localStorage.setItem('savedReports', JSON.stringify(savedReports));
-        this.showSuccess('Laporan berhasil disimpan');
     }
 
     renderAddStory(isGuest = false) {
@@ -554,7 +558,35 @@ export class StoryView {
         });
     }
 
-    renderSavedReports(reports) {
+    async renderSavedReports(reports = null) {
+        // Show loading state
+        this.appElement.innerHTML = `
+            <section class="saved-reports">
+                <h2>Saved Reports</h2>
+                <div class="loading">Memuat laporan tersimpan...</div>
+            </section>
+        `;
+
+        // If reports not provided, fetch from database
+        if (!reports) {
+            try {
+                reports = await databaseService.getSavedReports();
+            } catch (error) {
+                console.error('Error loading saved reports:', error);
+                this.showError('Gagal memuat laporan tersimpan. Silakan muat ulang halaman.');
+                this.appElement.querySelector('.saved-reports').innerHTML = `
+                    <h2>Saved Reports</h2>
+                    <div class="error">Gagal memuat laporan tersimpan. <button id="retry-load">Coba Lagi</button></div>
+                `;
+                
+                // Add retry button handler
+                const retryBtn = this.appElement.querySelector('#retry-load');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => this.renderSavedReports());
+                }
+                return;
+            }
+        }
         this.appElement.innerHTML = `
             <section class="saved-reports">
                 <h2>Saved Reports</h2>
@@ -586,13 +618,17 @@ export class StoryView {
         // Add event listeners for delete buttons
         const deleteButtons = this.appElement.querySelectorAll('.delete-report');
         deleteButtons.forEach(button => {
-            button.addEventListener('click', () => {
+            button.addEventListener('click', async () => {
                 const reportId = button.dataset.id;
-                const reports = JSON.parse(localStorage.getItem('savedReports') || '[]');
-                const updatedReports = reports.filter(report => report.id !== reportId);
-                localStorage.setItem('savedReports', JSON.stringify(updatedReports));
-                this.showSuccess('Report deleted successfully');
-                this.renderSavedReports(updatedReports);
+                try {
+                    await databaseService.deleteReport(reportId);
+                    const updatedReports = await databaseService.getSavedReports();
+                    this.showSuccess('Laporan berhasil dihapus');
+                    this.renderSavedReports(updatedReports);
+                } catch (error) {
+                    console.error('Error deleting report:', error);
+                    this.showError('Gagal menghapus laporan');
+                }
             });
         });
     }

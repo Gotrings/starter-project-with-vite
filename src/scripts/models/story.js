@@ -1,3 +1,5 @@
+import { databaseService } from '../services/database.js';
+
 export class StoryModel {
     constructor() {
         this.baseUrl = 'https://story-api.dicoding.dev/v1';
@@ -80,27 +82,27 @@ export class StoryModel {
                 throw new Error(data.message);
             }
 
-            // Simpan stories ke localStorage untuk offline cache
+            // Simpan stories ke IndexedDB untuk offline cache
             try {
-                localStorage.setItem('cachedStories', JSON.stringify(data.listStory));
+                await databaseService.saveStories(data.listStory);
             } catch (e) {
-                console.warn('Gagal menyimpan stories ke cache:', e);
+                console.warn('Gagal menyimpan stories ke IndexedDB:', e);
             }
 
             return data.listStory;
         } catch (error) {
             console.error('Error fetching stories:', error);
-            // Fallback: Ambil stories dari localStorage jika ada
-            const cached = localStorage.getItem('cachedStories');
-            if (cached) {
-                try {
-                    const stories = JSON.parse(cached);
+            // Fallback: Ambil stories dari IndexedDB jika ada
+            try {
+                const stories = await databaseService.getStories();
+                if (stories && stories.length > 0) {
                     return stories;
-                } catch (e) {
-                    throw error;
                 }
+                throw error;
+            } catch (dbError) {
+                console.warn('Gagal mengambil stories dari IndexedDB:', dbError);
+                throw error;
             }
-            throw error;
         }
     }
 
